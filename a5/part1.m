@@ -76,8 +76,8 @@ figure; montage({im_bg, im_obj, mask_s, result1});
 
 %%%%% your own images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-im_bg = im2double(imread('orange.jpg'));        % background image
-im_obj = im2double(imread('apple.jpg'));       % source image
+im_bg = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/orange.jpg'));        % background image
+im_obj = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/apple.jpg'));       % source image
 
 im_obj = imresize(im_obj, 1.45);
 % % Get source region mask (extracted object) from the user
@@ -119,7 +119,7 @@ figure; montage({im_bg, im_obj, mask_s, result2});
 % REPEAT ABOVE FOR IMAGE SET 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 im_bg = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/Denver.jpg'));  % background image
-im_obj = im2double(imread('eyeball.jpg'));       % source image
+im_obj = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/eyeball.jpg'));       % source image
 
 im_obj = imresize(im_obj, 0.6);
 
@@ -145,7 +145,7 @@ figure; montage({im_bg, im_obj, mask_s, result2});
 % REPEAT ABOVE FOR IMAGE SET 4
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 im_bg = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/friends.jpg'));  % background image
-im_obj = im2double(imread('discoball.jpg'));       % source image
+im_obj = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/discoball.jpg'));       % source image
 
 im_obj = imresize(im_obj, 1.8);
 
@@ -172,7 +172,7 @@ figure; montage({im_bg, im_obj, mask_s, result2});
 % REPEAT ABOVE FOR IMAGE SET 5
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 im_bg = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/hesNotCup.jpg'));  % background image
-im_obj = im2double(imread('cokeCan.jpg'));       % source image
+im_obj = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/cokeCan.jpg'));       % source image
 
 im_obj = imresize(im_obj, 1.3);
 
