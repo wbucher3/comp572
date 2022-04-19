@@ -5,12 +5,16 @@
 % * Brief description as per instructions
 % 
 %
-% Sources to Resources used
+%% Sources to Resources used
+% Idea for the heat map was from this lovely site
 % https://trekhleb.dev/blog/2021/content-aware-image-resizing-in-javascript/
+% research paper from class
 % http://graphics.cs.cmu.edu/courses/15-463/2012_fall/hw/proj3-seamcarving/imret.pdf
+% video resources
+% https://www.mathworks.com/matlabcentral/answers/280635-make-video-from-images
 
 % Image Sources
-%
+% https://ithhostels.com/location/san-diego-hostel/
 %
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,30 +26,70 @@ close all;
 pretest_flag = 1; % this line of code is designed to pass the pretest.
 
 %% Load Image
-im = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/balloon.jpg'));
-im = im2double(imread('https://www.cs.unc.edu/~montek/teaching/Comp790-Spring19/Project/Carving/house_by_jim_mccann.jpg'));
+im = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/final/pictures/alley.jpg'));
+% im = im2double(imread('https://www.cs.unc.edu/~montek/teaching/Comp790-Spring19/Project/Carving/house_by_jim_mccann.jpg'));
 figure; imshow(im);
 
 %% show the heat map
- im_heat_map = energy_map(im);
- figure; imshow(im_heat_map);
+% im_heat_map = energy_map(im);
+% figure; imshow(im_heat_map);
 
 %% display the first mask
 % mask = column_finder(im_heat_map);
 % rgb_im = cat(3, mask, mask, mask);
 % figure; imshow(rgb_im);
 
+
+
+
 %% Run whole thing here
-new_im = content_aware_remover(im, 75);
+     % = main_seam_cutter(image, width % of final image, height % of final image)
+new_im = main_seam_cutter(im, 90, 60);
 figure; imshow(new_im);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The Main Function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% @ input: image, new width percentage (1 - 99), new height percentage (1 - 99)
+% @ output: shrunken image
+function final_im = main_seam_cutter(im, width_percentage, height_percentage)
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% VIDEO THINGS, REMOVE IN FINAL PROJECT PRESENTATION 
+    video = VideoWriter('animation.mp4');
+    open(video);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    trimmed_im = im;
+    % removes columns
+    if width_percentage ~= 0
+        trimmed_im = content_aware_remover(im, width_percentage, false, size(im, 2), video);
+    end 
+    % rotate the image
+    if height_percentage ~= 0
+        trimmed_im = imrotate(trimmed_im, 90);
+        % removes rows of the already removed column image
+        trimmed_im = content_aware_remover(trimmed_im, height_percentage, true, size(im,2), video);
+        trimmed_im  = imrotate(trimmed_im, 270);
+
+    end 
+    %rotate the image back and return it 
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% VIDEO THINGS, REMOVE IN FINAL PROJECT PRESENTATION 
+    close(video);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    final_im = trimmed_im;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Main Driver of column remover functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% @ input: image, percentage (1 - 99)
+% @ input: image, percentage (1 - 99), rotation bool, video object
 % @ output: shrunken image
-function trimmed_im = content_aware_remover(im, percentage)
+function trimmed_im = content_aware_remover(im, percentage, rotated, original_height, video)
 
     % get the total number of columns we are trimming off
     total_cols = size(im, 2);
@@ -70,12 +114,103 @@ function trimmed_im = content_aware_remover(im, percentage)
         % find where we should remove the column
         column_mask = column_finder(current_heat_map);
 
+        % used to show the mask for presentation
+        % rgb_im = cat(3, column_mask, column_mask, column_mask);
+        % figure; imshow(rgb_im);
+
         % remove that column from the image
         current_im = column_remover(current_im, column_mask);
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% VIDEO THINGS, REMOVE IN FINAL PROJECT PRESENTATION 
+        % function to add white bars to image to append it to the video 
+        white_bar_current_im = white_bar_adder(current_im, total_cols, column_mask, original_height);
+        if rotated
+            writeVideo(video, imrotate(white_bar_current_im, 270));
+        else
+            writeVideo(video,white_bar_current_im);
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
 
     % return the trimmed image
     trimmed_im = current_im;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Video Frame Prepping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function white_bar_im = white_bar_adder(im, desired_width, mask, desired_height)
+        
+        masked_im = mask_adder(im, mask);
+
+        %% Adding Black bars on the frame so it fits 
+        current_red = masked_im(:,:,1);
+        current_green = masked_im(:,:,2);
+        current_blue = masked_im(:,:,3);
+        % create black bar
+        zero_addon = zeros(size(masked_im, 1), desired_width - size(masked_im, 2));
+
+        % add the black bar to the rgb matrices
+        zero_r = cat(2,current_red, zero_addon);
+        zero_g = cat(2,current_green, zero_addon);
+        zero_b = cat(2,current_blue, zero_addon);
+
+
+        % combine the rgb values back together to return 
+        white_bar_im = cat(3, zero_r, zero_g, zero_b);
+
+        if size(white_bar_im, 2) ~= desired_height
+            zero_addon = zeros(desired_height - size(white_bar_im,1), size(white_bar_im,2));
+
+            current_red = white_bar_im(:,:,1);
+            current_green = white_bar_im(:,:,2);
+            current_blue = white_bar_im(:,:,3);
+
+            zero_r = [zero_addon ; current_red];
+            zero_g = [zero_addon ; current_green];
+            zero_b = [zero_addon ; current_blue];
+
+            white_bar_im = cat(3, zero_r, zero_g, zero_b);
+
+        end 
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Adding Line to Image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function masked_im = mask_adder(im, mask)
+
+    % create empty matrix to append rows to
+    final_im_red = zeros(size(im,1), size(im,2));
+    final_im_green = zeros(size(im,1), size(im,2));
+    final_im_blue = zeros(size(im,1), size(im,2));
+
+    for i = 1:size(im, 1)
+        % find where the 1 value is in the mask on the row
+        % that is the index where the pixel needs to be removed
+        current_mask_row = mask(i,:);
+        idx = find(current_mask_row==1);
+
+        current_row_red = im(i,:,1);
+        current_row_green = im(i,:,2);
+        current_row_blue = im(i,:,3);
+        
+        % removes the pixel at the index
+        current_row_red(idx) = 1;
+        current_row_green(idx) = 0;
+        current_row_blue(idx) = 0;
+
+        % replace the ith row from final_im_rgb
+        final_im_red(i,:) = current_row_red;
+        final_im_green(i,:) = current_row_green;
+        final_im_blue(i,:) = current_row_blue;
+
+        
+    end 
+    masked_im = cat(3, final_im_red, final_im_green, final_im_blue);
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,6 +253,7 @@ end
 % @ input: energy matrix/map
 % @ output: 0 matrix with 1's where column to remove
 % description: uses shortest path algorithm to find a column that goes through very little edges 
+
 function mask = column_finder(heat_im)
     % this is the start of the dynamic programming matrix to build 
     % starts as the original image
@@ -151,8 +287,10 @@ function mask = column_finder(heat_im)
         im_mask = [im_mask; new_row];
 
     end
+
     %% helpful seeing the paths
-    %figure; imshow(im_mask);
+    % add a debug point or this will show out of control
+    % figure; imshow(im_mask);
 
 
     % next up! find the smallest value of the bottom row
@@ -210,8 +348,10 @@ end
 % @ output: image - 1 column
 % description: removes the one value from each row to remove an entire col
 function trimmed_im = column_remover(im, mask)
-    shorter_im = im(:,:,1);
 
+    % gets matrix the proper size
+    shorter_im = im(:,:,1);
+    % removes one column (the last column)
     shorter_im(:,size(im,2),:) = [];
 
     % create empty matrix to append rows to
