@@ -10,8 +10,8 @@
 % http://graphics.cs.cmu.edu/courses/15-463/2012_fall/hw/proj3-seamcarving/imret.pdf
 
 % Image Sources
-% shark image
-% https://howchoo.com/drones/drone-footage-of-sharks-with-swimmers
+%
+%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set up
@@ -22,12 +22,13 @@ close all;
 pretest_flag = 1; % this line of code is designed to pass the pretest.
 
 %% Load Image
-im = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/final/pictures/ganggang.jpg'));
+im = im2double(imread('https://raw.githubusercontent.com/wbucher3/comp572/main/pictures/balloon.jpg'));
+im = im2double(imread('https://www.cs.unc.edu/~montek/teaching/Comp790-Spring19/Project/Carving/house_by_jim_mccann.jpg'));
 figure; imshow(im);
 
 %% show the heat map
-% im_heat_map = energy_map(im);
-% figure; imshow(im_heat_map);
+ im_heat_map = energy_map(im);
+ figure; imshow(im_heat_map);
 
 %% display the first mask
 % mask = column_finder(im_heat_map);
@@ -35,21 +36,22 @@ figure; imshow(im);
 % figure; imshow(rgb_im);
 
 %% Run whole thing here
-new_im = content_aware_remover(im, 60);
+new_im = content_aware_remover(im, 75);
 figure; imshow(new_im);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Black Box Content Aware column remover function
+%% Main Driver of column remover functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % @ input: image, percentage (1 - 99)
 % @ output: shrunken image
 function trimmed_im = content_aware_remover(im, percentage)
 
     % get the total number of columns we are trimming off
-    total_cols = size(im, 2)
-    target_cols = ceil(total_cols * (percentage / 100))
+    total_cols = size(im, 2);
+    target_cols = ceil(total_cols * (percentage / 100));
     difference = total_cols - target_cols;
+    disp("Removing " + difference + " Columns")
 
     % trim off the columns one by one
     current_im = im;
@@ -149,25 +151,29 @@ function mask = column_finder(heat_im)
         im_mask = [im_mask; new_row];
 
     end
-    %% helpful seeing the heat map
+    %% helpful seeing the paths
     %figure; imshow(im_mask);
-    % find the smallest value of the bottom row
+
+
+    % next up! find the smallest value of the bottom row
     % follow that path up to find the column to remove
     
     % get position of min value of bottom row
     bottom_row = im_mask(size(im_mask,1),:);
     [val, idx] = min(bottom_row);
 
+    % matrix of zeros, will fill in 1's where the value is to be removed
     zero_mask = zeros(size(im_mask));
     
     for i = size(im_mask,1):-1:1
-        % set the current to white pixel
+        % set the current to pixel value to 1
         zero_mask(i, idx) = 1;
         row_above = i - 1;
     
         % get the next index point
 
-        % first if is for when it hits the top, tells it is done
+        % only looks for the next pixel if greater than 1
+        % if i = 1, we are at the top of the map and this will error
         if i > 1
             % prevents it from trying to find pixel off the right/left edge
             if idx == 1
@@ -178,11 +184,12 @@ function mask = column_finder(heat_im)
                 possible_values = [im_mask(row_above, idx-1)  im_mask(row_above, idx)  im_mask(row_above, idx+1)];
             end
 
-            [val, small_idx] = min(possible_values);
+            % check to see if we moving up-left, up-center, or up-right.
+            [val, local_idx] = min(possible_values);
     
-            if small_idx == 1
+            if local_idx == 1
                 idx = idx - 1;
-            elseif small_idx == 3
+            elseif local_idx == 3
                 idx = idx + 1;
             end 
             
@@ -190,8 +197,8 @@ function mask = column_finder(heat_im)
 
     end
     
-    
-    
+    % finally, return the mask
+    % mask is matrix of 1's and 0's where the 1's are to be removed
     mask = zero_mask; 
 end
 
